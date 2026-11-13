@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revisor de planillas · Hazlo tú</title>
+<meta name="description" content="Revisa tu Excel o CSV antes de pasárselo a una IA. Corre en tu navegador: el archivo no sale de tu computador.">
+<style>
+:root{
+  --bg:#F4F7F7;--card:#FFFFFF;--ink:#0F172A;--mut:#475569;--line:#E2E8F0;
+  --teal:#0D9488;--teal2:#0F766E;--tealbg:#F0FDFA;--grad:linear-gradient(90deg,#0D9488 0%,#2563EB 100%);
+  --hi:#B91C1C;--hibg:#FEF2F2;--md:#B45309;--mdbg:#FFFBEB;--lo:#475569;--lobg:#F1F5F9;
+  --code:#0A1418;--codeink:#E2E8F0;--drop:#CCFBF1;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0A1418;--card:#111D22;--ink:#F1F5F9;--mut:#94A3B8;--line:#1F2F36;--tealbg:#0D2A2A;--teal2:#5EEAD4;
+    --hi:#FCA5A5;--hibg:#2A1416;--md:#FCD34D;--mdbg:#2A2010;--lo:#CBD5E1;--lobg:#16242A;--code:#050B0D;--drop:#134E4A}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:28px 16px 56px}
+.kicker{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal2)}
+h1{font-size:clamp(30px,6vw,46px);line-height:1.08;letter-spacing:-.03em;margin-top:8px}
+h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:18px;color:var(--mut);margin-top:12px;max-width:640px}
+.priv{display:flex;gap:10px;align-items:flex-start;margin-top:16px;background:var(--tealbg);border:1px solid var(--teal);border-radius:12px;padding:12px 14px;font-size:15px;max-width:640px}
+.priv b{color:var(--teal2)}
+.drop{margin-top:24px;border:2px dashed var(--teal);border-radius:18px;background:var(--card);padding:30px 20px;text-align:center;transition:background .15s}
+.drop.over{background:var(--drop)}
+.drop p{font-size:18px;font-weight:700}
+.drop small{display:block;color:var(--mut);margin-top:4px;font-size:14px}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+button,.btn{font:inherit;font-weight:700;font-size:15px;border-radius:10px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button.pri,.btn.pri{background:var(--teal);border-color:var(--teal);color:#fff}
+button:focus-visible,.btn:focus-visible{outline:3px solid #2563EB;outline-offset:2px}
+input[type=file]{display:none}
+select{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.hidden{display:none !important}
+.sheetsel{margin-top:14px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:15px}
+.err{margin-top:14px;color:var(--hi);font-weight:700}
+section.res{margin-top:34px}
+h2{font-size:22px;letter-spacing:-.01em;margin-bottom:12px}
+.sum{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.sum .big{font-size:20px;font-weight:800}
+.sum .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;letter-spacing:.04em;border-radius:999px;padding:5px 11px}
+.chip.alta{background:var(--hibg);color:var(--hi)}
+.chip.media{background:var(--mdbg);color:var(--md)}
+.chip.baja{background:var(--lobg);color:var(--lo)}
+.chip.ok{background:var(--tealbg);color:var(--teal2)}
+.issues{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.iss{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--lo);border-radius:14px;padding:16px 18px}
+.iss.alta{border-left-color:var(--hi)}
+.iss.media{border-left-color:var(--md)}
+.iss .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.iss h3{font-size:17px;line-height:1.3}
+.iss .col{font-size:13px;font-weight:700;color:var(--mut);margin-top:2px}
+.iss p{margin-top:8px;font-size:15px}
+.iss .ej{margin-top:8px;font-size:14px;color:var(--mut)}
+.iss .ej code{font:13px/1.4 ui-monospace,Consolas,monospace;background:var(--lobg);border-radius:6px;padding:2px 6px;color:var(--ink);white-space:pre}
+.iss .fix{margin-top:10px;font-size:14px;background:var(--tealbg);border-radius:10px;padding:10px 12px}
+.iss .fix b{color:var(--teal2)}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:9px 12px;border-top:1px solid var(--line);white-space:nowrap}
+th{border-top:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+td.n{text-align:right}
+.ai{background:var(--code);color:var(--codeink);border-radius:16px;padding:16px 18px}
+.ai .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.ai .bar span{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#5EEAD4}
+.ai textarea{width:100%;min-height:300px;resize:vertical;background:transparent;border:1px solid #1F2F36;border-radius:10px;color:var(--codeink);font:13px/1.5 ui-monospace,Consolas,monospace;padding:12px}
+.ai .note{font-size:13px;color:#94A3B8;margin-top:8px}
+.copy{background:#5EEAD4;border-color:#5EEAD4;color:#0A1418}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);font-size:14px;color:var(--mut)}
+footer a{color:var(--teal2);font-weight:700}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <span class="kicker">Hazlo tú · 01</span>
+  <h1>Revisor de planillas: <em>antes de pasarle un Excel a una IA.</em></h1>
+  <p class="lead">Arrastra tu Excel o CSV. Te marco lo que confundiría a una IA (fechas mezcladas, subtotales, códigos sin ceros o redondeados, RUT que no cuadran) y cómo arreglarlo en Excel.</p>
+  <div class="priv">🔒 <span><b>Tu archivo no sale de tu computador.</b> Todo se revisa en este navegador: no hay servidor, no se guarda nada y no se envía a ninguna IA.</span></div>
+
+  <div class="drop" id="drop">
+    <p>Arrastra aquí tu archivo</p>
+    <small>Excel (.xlsx, .xls) o CSV · la primera fila con datos se toma como encabezado</small>
+    <div class="btns">
+      <label class="btn pri" for="file" tabindex="0" id="pick">Elegir archivo</label>
+      <button id="demo" type="button">Probar con un ejemplo</button>
+      <a class="btn" href="ejemplo.csv" download>Descargar el ejemplo</a>
+    </div>
+    <input type="file" id="file" accept=".csv,.txt,.xlsx,.xls,.xlsm">
+    <div class="sheetsel hidden" id="sheetsel"><label for="sheet">Hoja:</label><select id="sheet"></select></div>
+    <div class="err hidden" id="err"></div>
+  </div>
+
+  <section class="res hidden" id="res">
+    <h2>Lo que encontré</h2>
+    <div class="sum" id="sum"></div>
+    <div class="issues" id="issues"></div>
+
+    <h2 style="margin-top:30px">Columna por columna</h2>
+    <div class="tw"><table id="cols"></table></div>
+
+    <h2 style="margin-top:30px">Resumen para pegarle a la IA <span style="font-weight:600;color:var(--mut);font-size:16px">(sin tus datos)</span></h2>
+    <div class="ai">
+      <div class="bar"><span>Listo para copiar</span><button class="copy" id="copy" type="button">Copiar</button></div>
+      <textarea id="aitext" spellcheck="false" aria-label="Resumen para la IA"></textarea>
+      <p class="note">Solo lleva nombres de columna, tipos y conteos. Ningún valor de tus filas. Igual revisa que los nombres de columna no digan nada sensible.</p>
+    </div>
+  </section>
+
+  <footer>
+    Hecho por <a href="https://www.linkedin.com/in/gonzalo-rojas-chac%C3%B3n-70104a96/" target="_blank" rel="noopener">Gonzalo Rojas Chacón</a> · Serie «Hazlo tú»: herramientas chicas que puedes usar o construir.<br>
+    Código abierto: <a href="https://github.com/grojasc/hazlo-tu" target="_blank" rel="noopener">github.com/grojasc/hazlo-tu</a> · Detecta casos frecuentes, no todos: úsalo como primera revisión.
+  </footer>
+</main>
+
+<script>
+'use strict';
+// ------------------------------------------------------------------ planilla de ejemplo (datos inventados)
+const EJEMPLO = [
+  'Folio;Fecha;RUT cliente;Cliente;Comuna;Producto;Cantidad;Precio unitario;Código SKU;N° seguimiento',
+  '1001;09-11-2026;12.345.678-5;Ferretería Sur;Santiago;Guantes de nitrilo;12;4990;00123;7800012345678901234',
+  '1002;09-11-2026;11.111.111-1;Comercial Andes;SANTIAGO;Casco de seguridad;5;12990;00456;7800012345678901235',
+  '1003;2026-11-10;22222222-2;Ferretería Sur ;Santiago ;Lentes de seguridad;12 cajas;3490;123;7,80001E+18',
+  '1004;10/11/2026;12.345.678-9;Distribuidora Norte;Antofagasta;Guantes de nitrilo;8;4990;00123;7800012345678901237',
+  ';;;;;;;;;',
+  '1005;11-11-2026;33.333.333-3;Comercial Andes;santiago;Chaleco reflectante;1.200;$2.990;00789;7800012345678901000',
+  'Subtotal;;;;;;1237;;;',
+  '1006;11 nov 2026;44444444-4;Minera Los Cerros;Calama;Casco de seguridad;20;12990;00456;7800012345678901239',
+  '1006;11 nov 2026;44444444-4;Minera Los Cerros;Calama;Casco de seguridad;20;12990;00456;7800012345678901239',
+  '1007;12-11-2026;;Constructora Valle;Rancagua;Botas de seguridad;6;;789;7800012345678901240',
+  '1008;13-11-2026;55.555.555-5;Ferretería Sur;Santiago;Lentes de seguridad;15;3490;0456;7800012345678901241'
+].join('\n');
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
+const MAX_FILAS = 200000;
+
+// ------------------------------------------------------------------ lectura
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/).find(l => l.trim()) || '';
+  const cuenta = d => { let n = 0, q = false; for (const c of first) { if (c === '"') q = !q; else if (c === d && !q) n++; } return n; };
+  const delim = [';', ',', '\t', '|'].map(d => [d, cuenta(d)]).sort((a, b) => b[1] - a[1])[0][0];
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    } else if (c === '"' && f === '') q = true;
+    else if (c === delim) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(f); rows.push(row); row = []; f = '';
+    } else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return { rows, delim, merges: 0, xlsx: false };
+}
+
+// Excel en Windows guarda los CSV en Windows-1252 (no UTF-8): si no es UTF-8 válido, se lee así para no romper ñ y tildes.
+function decodificar(buf) {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+  catch { return new TextDecoder('windows-1252').decode(buf); }
+}
+
+let XLSXlib = null;
+function cargarXLSX() {
+  if (XLSXlib) return Promise.resolve(XLSXlib);
+  return new Promise((ok, mal) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onload = () => { XLSXlib = window.XLSX; ok(XLSXlib); };
+    s.onerror = () => mal(new Error('No pude cargar el lector de Excel (¿sin internet?). Guarda la planilla como CSV y vuelve a intentarlo.'));
+    document.head.appendChild(s);
+  });
+}
+
+let libro = null, nombreArchivo = '';
+function leerHoja(nombre) {
+  const ws = libro.Sheets[nombre];
+  const rows = XLSXlib.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true });
+  return { rows, merges: (ws['!merges'] || []).length, xlsx: true };
+}
+
+async function abrir(file) {
+  ocultarError();
+  nombreArchivo = file.name;
+  try {
+    if (/\.(xlsx|xls|xlsm)$/i.test(file.name)) {
+      const X = await cargarXLSX();
+      libro = X.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+      const sel = $('#sheet'); sel.innerHTML = libro.SheetNames.map(n => `<option>${esc(n)}</option>`).join('');
+      $('#sheetsel').classList.toggle('hidden', libro.SheetNames.length < 2);
+      revisar(leerHoja(libro.SheetNames[0]), libro.SheetNames[0]);
+    } else {
+      libro = null; $('#sheetsel').classList.add('hidden');
+      revisar(parseCSV(decodificar(await file.arrayBuffer())), null);
+    }
+  } catch (e) { mostrarError(e.message || String(e)); }
+}
+
+// ------------------------------------------------------------------ clasificación de valores
+const vacio = v => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
+const MESES = 'ene|feb|mar|abr|may|jun|jul|ago|sep|sept|set|oct|nov|dic|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre';
+const RE_MES = new RegExp(`^\\d{1,2}\\s*(de\\s+|-|/)?\\s*(${MESES})\\.?\\s*(de\\s+|-|/)?\\s*\\d{2,4}$`, 'i');
+
+function formatoFecha(s) {
+  let m;
+  if ((m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/))) return { f: 'AAAA-MM-DD', amb: false };
+  if ((m = s.match(/^(\d{1,2})([-/.])(\d{1,2})\2(\d{4}|\d{2})$/))) {
+    const a = +m[1], b = +m[3];
+    if (a > 31 || b > 31 || (a > 12 && b > 12)) return null;
+    const y = m[4].length === 2 ? 'AA' : 'AAAA';
+    return { f: `DD${m[2]}MM${m[2]}${y}`, amb: a <= 12 && b <= 12 && a !== b };
+  }
+  if (RE_MES.test(s)) return { f: 'día y mes en palabras', amb: false };
+  return null;
+}
+
+const NOMBRE_MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function dosLecturas(s) {
+  const [a, b] = String(s).trim().split(/[-/.]/).map(Number);
+  return `«${String(s).trim()}» puede ser el ${a} de ${NOMBRE_MES[b - 1]} o el ${b} de ${NOMBRE_MES[a - 1]}.`;
+}
+
+function tipoNumero(s) {
+  if (/^-?\d+$/.test(s)) return 'entero';
+  if (/^-?\d+,\d+$/.test(s)) return 'decimal';
+  if (/^-?\d{1,3}\.\d{3}$/.test(s)) return 'miles';          // 1.200: ¿mil doscientos o 1,2?
+  if (/^-?\d+\.\d+$/.test(s)) return 'decimal-punto';
+  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) return 'miles';
+  if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) return 'miles-ingles';
+  return null;
+}
+const RE_CONTEXTO = /^([$€]|US\$|CLP|UF)\s?-?[\d.,]+$|^-?[\d.,]+\s?([$€%]|CLP|UF)$/i;   // $2.990, 15%
+const RE_UNIDAD = /^-?\d[\d.,]*\s*[a-záéíóúñ]+\.?$/i;                               // 12 cajas, 5kg
+
+function parseRut(s) {
+  const t = s.replace(/\s/g, '');
+  const m = t.match(/^(\d{1,2}\.?\d{3}\.?\d{3})-?([\dkK])$/);
+  if (!m) return null;
+  const forma = t.includes('.') ? '12.345.678-5' : t.includes('-') ? '12345678-5' : '123456785';
+  return { cuerpo: m[1].replace(/\./g, ''), dv: m[2].toUpperCase(), forma };
+}
+function dvRut(cuerpo) {
+  let s = 0, f = 2;
+  for (let i = cuerpo.length - 1; i >= 0; i--) { s += +cuerpo[i] * f; f = f === 7 ? 2 : f + 1; }
+  const r = 11 - (s % 11);
+  return r === 11 ? '0' : r === 10 ? 'K' : String(r);
+}
+
+function clasificar(v, esRut) {
+  if (v instanceof Date) return { k: 'fecha', f: 'fecha de Excel' };
+  if (typeof v === 'number') return { k: 'numero', n: 'celda numérica', num: true };
+  if (typeof v === 'boolean') return { k: 'texto' };
+  const s = String(v).trim();
+  if (esRut) { const r = parseRut(s); if (r) return { k: 'rut', r }; }
+  const f = formatoFecha(s); if (f) return { k: 'fecha', f: f.f, amb: f.amb };
+  const n = tipoNumero(s); if (n) return { k: 'numero', n, txt: true };
+  if (RE_CONTEXTO.test(s) || RE_UNIDAD.test(s)) return { k: 'numtexto' };
+  if (!esRut && /^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/.test(s)) return { k: 'rut', r: parseRut(s) };
+  return { k: 'texto' };
+}
+
+const RE_CIENT = /^\d([.,]\d+)?E\+?\d+$/i;                                         // 7,80001E+18
+const RE_TOTAL = /^(sub\s*-?\s*)?totale?s?\b|^suma\b|^total\s+general/i;
+const RE_RUT_HEAD = /\br\.?u\.?t\b|\brun\b/i;
+const RE_COD_HEAD = /(^|[\s_-])(id|c[oó]d(igo)?|sku|n[°º]|nro|n[uú]mero|cuenta|cta|art[ií]culo|material|cc|ceco)([\s_.-]|$)/i;
+const sinTildes = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+// ------------------------------------------------------------------ revisión
+function revisar(hoja, nombreHoja) {
+  const recortado = hoja.rows.length > MAX_FILAS + 50;
+  let rows = hoja.rows.slice(0, MAX_FILAS + 50).map(r => Array.isArray(r) ? r : []);
+  const problemas = [];
+  const add = (sev, titulo, col, texto, fix, ej, filas) => problemas.push({ sev, titulo, col, texto, fix, ej, filas });
+
+  // encabezado: primera fila con datos; si tiene una sola celda y la siguiente tiene más, es un título
+  let h = rows.findIndex(r => r.some(v => !vacio(v)));
+  if (h < 0) { mostrarError('La hoja está vacía.'); return; }
+  const llenas = r => (r || []).filter(v => !vacio(v)).length;
+  let sig = h + 1;
+  while (sig < rows.length && llenas(rows[sig]) === 0) sig++;
+  if (llenas(rows[h]) === 1 && llenas(rows[sig]) > 1) {
+    add('media', 'Hay un título arriba de la tabla', null,
+      `La fila ${h + 1} tiene solo un texto («${String(rows[h].find(v => !vacio(v))).slice(0, 60)}»). Una IA puede tomarlo como encabezado y leer mal todas las columnas.`,
+      'Deja el título en otra hoja o bórralo: la tabla debería empezar en la fila 1 con los nombres de columna.', null, [h + 1]);
+    h = sig;
+  }
+  let ancho = 0;
+  for (let i = h; i < rows.length; i++) if (rows[i].length > ancho) ancho = rows[i].length;
+  const head = Array.from({ length: ancho }, (_, j) => vacio(rows[h][j]) ? '' : String(rows[h][j]).trim());
+  // recortar columnas vacías al final
+  let nc = ancho;
+  while (nc > 0 && head[nc - 1] === '' && rows.slice(h + 1).every(r => vacio(r[nc - 1]))) nc--;
+  const cols = head.slice(0, nc);
+  const nombre = j => cols[j] || `Columna ${j + 1} (sin nombre)`;
+
+  // filas de datos
+  const datos = [];
+  let ultimaConDatos = h;
+  rows.forEach((r, i) => { if (i > h && r.slice(0, nc).some(v => !vacio(v))) ultimaConDatos = i; });
+  const vaciasMedio = [], totales = [];
+  for (let i = h + 1; i <= ultimaConDatos; i++) {
+    const r = Array.from({ length: nc }, (_, j) => rows[i][j] === undefined ? null : rows[i][j]);
+    if (r.every(vacio)) { vaciasMedio.push(i + 1); continue; }
+    if (r.some(v => typeof v === 'string' && RE_TOTAL.test(v.trim()))) { totales.push(i + 1); continue; }
+    datos.push({ fila: i + 1, r });
+  }
+  if (datos.length > MAX_FILAS) datos.length = MAX_FILAS;
+  const N = datos.length;
+
+  // encabezados
+  const vistos = {};
+  cols.forEach((c, j) => {
+    if (!c) add('media', 'Columna sin nombre', nombre(j), 'Sin nombre, la IA tiene que adivinar qué significa esa columna.', 'Escríbele un nombre que se entienda solo, por ejemplo «Venta neta sin IVA».');
+    else { const k = sinTildes(c.toLowerCase()); (vistos[k] = vistos[k] || []).push(j); }
+  });
+  Object.values(vistos).filter(js => js.length > 1).forEach(js =>
+    add('media', 'Dos columnas con el mismo nombre', js.map(nombre).join(' y '), 'Cuando dos columnas se llaman igual, la IA no sabe a cuál te refieres.', 'Ponle a cada una un nombre distinto que explique la diferencia.'));
+
+  if (hoja.merges) add('alta', 'Celdas combinadas', null,
+    `La hoja tiene ${plural(hoja.merges, 'grupo', 'grupos')} de celdas combinadas. Al leerla, solo la primera celda tiene el valor y las demás quedan vacías.`,
+    'Selecciona todo → Inicio → Combinar y centrar → Separar celdas, y repite el valor en cada fila.');
+
+  if (vaciasMedio.length) add('media', 'Filas vacías en medio de los datos', null,
+    `${plural(vaciasMedio.length, 'fila vacía', 'filas vacías')} entre los datos. Muchas herramientas creen que ahí termina la tabla y no leen lo que sigue.`,
+    'Bórralas: selecciona la fila → clic derecho → Eliminar.', null, vaciasMedio);
+
+  if (totales.length) add('alta', 'Filas de total o subtotal en medio de los datos', null,
+    `${plural(totales.length, 'fila parece', 'filas parecen')} un total. Una IA la suma como si fuera otro registro y el resultado sale inflado.`,
+    'Saca los totales de la tabla y calcúlalos aparte (o con una tabla dinámica).', null, totales);
+
+  // duplicadas
+  const claves = new Map();
+  datos.forEach(d => {
+    const k = JSON.stringify(d.r.map(v => v instanceof Date ? v.getTime() : vacio(v) ? '' : String(v).trim()));
+    (claves.get(k) || claves.set(k, []).get(k)).push(d.fila);
+  });
+  const dups = [...claves.values()].filter(g => g.length > 1);
+  if (dups.length) add('alta', 'Filas repetidas', null,
+    `${plural(dups.length, 'grupo', 'grupos')} de filas idénticas. Si es el mismo registro copiado dos veces, la IA lo cuenta doble.`,
+    'Revisa si de verdad son el mismo registro. Si lo son: Datos → Quitar duplicados.',
+    dups.slice(0, 3).map(g => `filas ${g.join(' y ')}`), null);
+
+  // columna por columna
+  const resumenCols = [];
+  for (let j = 0; j < nc; j++) {
+    const vals = datos.map(d => ({ v: d.r[j], fila: d.fila }));
+    const llenos = vals.filter(x => !vacio(x.v));
+    const nVac = vals.length - llenos.length;
+    const esRutHead = RE_RUT_HEAD.test(cols[j]);
+    const cl = llenos.map(x => ({ ...x, c: clasificar(x.v, esRutHead) }));
+    const cuenta = {}; cl.forEach(x => cuenta[x.c.k] = (cuenta[x.c.k] || 0) + 1);
+    const nLl = llenos.length;
+    let tipo = 'vacía';
+    if (nLl) {
+      const num = (cuenta.numero || 0) + (cuenta.numtexto || 0);
+      tipo = (cuenta.rut || 0) >= nLl * 0.6 ? 'RUT' : (cuenta.fecha || 0) >= nLl * 0.6 ? 'fecha' : num >= nLl * 0.6 ? 'número' : 'texto';
+    }
+    const esRut = esRutHead || (cuenta.rut || 0) >= nLl * 0.6;
+    const distintos = new Set(llenos.map(x => x.v instanceof Date ? x.v.getTime() : String(x.v).trim())).size;
+    const notas = [];
+
+    // vacías
+    if (nLl === 0 && N > 0) add('media', 'Columna vacía', nombre(j), 'La columna no tiene ningún dato.', 'Bórrala o llénala; si queda vacía, la IA puede inventar qué debería ir ahí.');
+    else if (nVac) {
+      const p = pct(nVac, N);
+      add(p >= 20 ? 'media' : 'baja', 'Celdas vacías', nombre(j),
+        `${nVac} de ${N} filas sin dato (${p} %). Una IA no sabe si vacío significa cero, «no aplica» o «falta el dato».`,
+        'Decide qué significa vacío y escríbelo. Para encontrarlas: Inicio → Buscar y seleccionar → Ir a Especial → Celdas en blanco.',
+        null, vals.filter(x => vacio(x.v)).map(x => x.fila));
+      notas.push(plural(nVac, 'vacía', 'vacías'));
+    }
+
+    // espacios de más
+    const esp = llenos.filter(x => typeof x.v === 'string' && (x.v !== x.v.trim() || /\s{2,}/.test(x.v)));
+    if (esp.length) {
+      add('baja', 'Espacios de más', nombre(j),
+        `${plural(esp.length, 'celda tiene', 'celdas tienen')} espacios al inicio, al final o dobles. Se ven iguales a las demás, pero para una IA o una fórmula son valores distintos.`,
+        'En una columna nueva usa =ESPACIOS(A2), copia el resultado y pégalo como valores.',
+        esp.slice(0, 3).map(x => `«${x.v.replace(/ /g, '·')}» (fila ${x.fila})`), null);
+      notas.push('espacios de más');
+    }
+
+    if (tipo === 'número') {
+      const conTexto = cl.filter(x => x.c.k === 'numtexto');
+      if (conTexto.length) {
+        add('alta', 'Números mezclados con texto', nombre(j),
+          `${plural(conTexto.length, 'celda mezcla', 'celdas mezclan')} el número con una unidad o un símbolo. Algo como «12 cajas» o «$2.990» no se puede sumar: la IA lo salta o lo adivina.`,
+          'Deja solo el número y pon la unidad en el encabezado, por ejemplo «Cantidad (cajas)» o «Precio (CLP)».',
+          conTexto.slice(0, 3).map(x => `«${x.v}» (fila ${x.fila})`), null);
+        notas.push('números con texto');
+      }
+      const miles = cl.filter(x => x.c.k === 'numero' && x.c.n === 'miles');
+      if (miles.length) {
+        add('media', 'Números con punto de miles', nombre(j),
+          `«1.200» es mil doscientos para ti, pero una herramienta configurada en inglés lo lee como 1,2.`,
+          'Quita el formato de miles (Ctrl+1 → Número, sin separador) o avísale a la IA que el punto separa miles y la coma, decimales.',
+          miles.slice(0, 3).map(x => `«${x.v}» (fila ${x.fila})`), null);
+        notas.push('punto de miles');
+      }
+      const enTexto = cl.filter(x => x.c.txt);
+      if (hoja.xlsx && enTexto.length && (cuenta.numero || 0) > enTexto.length) {
+        add('alta', 'Números guardados como texto', nombre(j),
+          `${plural(enTexto.length, 'celda se ve', 'celdas se ven')} como número, pero Excel la tiene guardada como texto (el triángulo verde). Al sumar, no cuenta.`,
+          'Selecciona la columna → el aviso del triángulo verde → Convertir en número.',
+          enTexto.slice(0, 3).map(x => `«${x.v}» (fila ${x.fila})`), null);
+        notas.push('números como texto');
+      }
+    }
+
+    // fechas
+    const fechas = cl.filter(x => x.c.k === 'fecha');
+    if (fechas.length >= Math.max(2, nLl * 0.5)) {
+      const formatos = {}; fechas.forEach(x => formatos[x.c.f] = (formatos[x.c.f] || 0) + 1);
+      const amb = fechas.filter(x => x.c.amb);
+      const fs = Object.keys(formatos);
+      if (fs.length > 1) {
+        add('media', 'Fechas escritas de distintas formas', nombre(j),
+          `Encontré ${fs.length} formatos: ${fs.map(f => `${f} (${formatos[f]})`).join(', ')}. ` +
+          (amb.length ? `Además, ${plural(amb.length, 'fecha es ambigua', 'fechas son ambiguas')}: ${dosLecturas(amb[0].v)}` : ''),
+          'Selecciona la columna → Ctrl+1 → Fecha, y usa un solo formato. El más seguro para una IA es AAAA-MM-DD (2026-11-09).',
+          fechas.filter(x => x.c.f !== fs[0]).slice(0, 3).map(x => `«${x.v instanceof Date ? x.v.toISOString().slice(0, 10) : x.v}» (fila ${x.fila})`), null);
+        notas.push('fechas mezcladas');
+      } else if (amb.length && fs[0] !== 'fecha de Excel') {
+        add('baja', 'Fechas escritas como texto', nombre(j),
+          `Las fechas están como texto y ${plural(amb.length, 'es ambigua', 'son ambiguas')}: ${dosLecturas(amb[0].v)}`,
+          'Conviértelas a formato Fecha (Ctrl+1 → Fecha) o escríbelas como AAAA-MM-DD.', null, null);
+      }
+      if (tipo !== 'fecha' && fechas.length) tipo = 'fecha';
+    }
+
+    // RUT
+    if (esRut) {
+      const ruts = cl.filter(x => x.c.k === 'rut');
+      let malos = ruts.filter(x => dvRut(x.c.r.cuerpo) !== x.c.r.dv);
+      const planos = ruts.filter(x => x.c.r.forma === '123456785');
+      if (planos.length >= ruts.length * 0.8 && malos.length >= ruts.length * 0.5) {
+        // Casi todos sin guion y casi todos «inválidos»: lo más probable es que el dígito verificador venga en otra columna.
+        add('baja', 'RUT sin dígito verificador', nombre(j),
+          'Casi todos los RUT vienen sin guion y no cuadran con un dígito verificador al final. Lo más probable es que el dígito esté en otra columna, así que no los validé.',
+          'Si el dígito está en otra columna, júntalos en una sola con =A2&"-"&B2 antes de pasarle la planilla a una IA.', null, null);
+        malos = [];
+      }
+      const noRut = cl.filter(x => x.c.k !== 'rut');
+      if (malos.length) {
+        add('alta', 'RUT con dígito verificador que no cuadra', nombre(j),
+          `${plural(malos.length, 'RUT no pasa', 'RUT no pasan')} la validación del dígito verificador (módulo 11). Puede ser un error de tipeo en el origen.`,
+          'Revísalos contra el documento original antes de usar la planilla para cruzar datos.',
+          malos.slice(0, 3).map(x => `«${x.v}» (fila ${x.fila})`), null);
+        notas.push(`${malos.length} RUT ${malos.length === 1 ? 'inválido' : 'inválidos'}`);
+      }
+      const formas = {}; ruts.forEach(x => formas[x.c.r.forma] = (formas[x.c.r.forma] || 0) + 1);
+      if (Object.keys(formas).length > 1) {
+        add('media', 'RUT escritos de distintas formas', nombre(j),
+          `Hay ${Object.keys(formas).length} formas: ${Object.entries(formas).map(([f, n]) => `${f} (${n})`).join(', ')}. Para la IA, «12.345.678-5» y «12345678-5» son textos distintos y no los cruza.`,
+          'Usa una sola forma, por ejemplo 12345678-5: Buscar y reemplazar «.» por nada.', null, null);
+        notas.push('RUT en varias formas');
+      }
+      if (noRut.length && ruts.length) {
+        add('media', 'Valores que no parecen RUT', nombre(j), `${plural(noRut.length, 'celda no tiene', 'celdas no tienen')} forma de RUT.`,
+          'Revisa si es otro dato que quedó en la columna equivocada.', noRut.slice(0, 3).map(x => `«${x.v}» (fila ${x.fila})`), null);
+      }
+      tipo = 'RUT';
+    }
+
+    // códigos largos que Excel redondeó: guarda solo 15 dígitos y los deja en notación científica o terminados en ceros
+    if (!esRut && tipo !== 'fecha') {
+      const cient = llenos.filter(x => typeof x.v === 'string' && RE_CIENT.test(x.v.trim()));
+      const redondeados = llenos.filter(x => (typeof x.v === 'number' && Number.isInteger(x.v) && Math.abs(x.v) >= 1e15) ||
+        (typeof x.v === 'string' && /^\d{16,}$/.test(x.v.trim()) && /000$/.test(x.v.trim())));
+      if (cient.length || redondeados.length) {
+        const n = cient.length + redondeados.length;
+        add('alta', 'Códigos largos que Excel redondeó', nombre(j),
+          `${plural(n, 'valor parece', 'valores parecen')} un código largo que Excel convirtió en número: quedó en notación científica (como «7,8E+18») o con los últimos dígitos en cero. Excel guarda solo 15 dígitos, y cambiar la columna a texto después no recupera los que perdió.`,
+          'Vuelve al archivo original (el que entrega el sistema, sin abrirlo en Excel) e impórtalo con esa columna como Texto: Datos → Desde texto/CSV → Transformar datos → Tipo: Texto. Después compara una muestra con el original.',
+          [...cient, ...redondeados].slice(0, 3).map(x => `«${x.v}» (fila ${x.fila})`), null);
+        notas.push('códigos largos redondeados');
+        tipo = 'código';
+      }
+    }
+
+    // códigos que pudieron perder los ceros de la izquierda
+    if (!esRut && tipo !== 'fecha') {
+      const digitos = llenos.filter(x => typeof x.v === 'number' ? Number.isInteger(x.v) : /^\d+$/.test(String(x.v).trim()))
+                            .map(x => ({ ...x, s: typeof x.v === 'number' ? String(x.v) : String(x.v).trim() }));
+      const conCero = digitos.filter(x => x.s.length > 1 && x.s[0] === '0');
+      const largos = new Set(digitos.map(x => x.s.length));
+      const pareceCodigo = RE_COD_HEAD.test(cols[j]) || conCero.length > 0;
+      if (pareceCodigo && digitos.length >= nLl * 0.8 && largos.size > 1 && conCero.length) {
+        const porValor = {}; digitos.forEach(x => { const k = x.s.replace(/^0+/, ''); (porValor[k] = porValor[k] || new Set()).add(x.s); });
+        const choques = Object.values(porValor).filter(s => s.size > 1).map(s => [...s]);
+        add('alta', 'Códigos que pudieron perder los ceros de la izquierda', nombre(j),
+          `Algunos códigos empiezan con 0 y otros tienen menos dígitos. Pasa cuando Excel abre el archivo y convierte el código en número: «00123» queda como «123».` +
+          (choques.length ? ` ${choques.slice(0, 2).map(c => c.map(v => `«${v}»`).join(' y ')).join('; ')} probablemente son el mismo código, pero una IA los trata como distintos.` : ''),
+          'Al importar, marca esa columna como Texto (Datos → Desde texto/CSV → Transformar datos → Tipo: Texto). Si ya los perdió y todos los códigos tienen el mismo largo, =TEXTO(A2;"00000") repone los ceros; si no, vuelve al archivo original.',
+          [...largos].sort().map(l => `${l} dígitos: ${digitos.filter(x => x.s.length === l).length}`), null);
+        notas.push('códigos sin ceros');
+        tipo = 'código';
+      } else if (hoja.xlsx && RE_COD_HEAD.test(cols[j]) && llenos.some(x => typeof x.v === 'number') && largos.size > 1) {
+        add('media', 'Códigos guardados como número', nombre(j),
+          'Excel guardó esta columna de códigos como número. Si algún código tenía ceros a la izquierda, ya se perdieron.',
+          'Marca la columna como Texto antes de importar o pegar los datos.', null, null);
+        tipo = 'código';
+      }
+    }
+
+    // mismo valor escrito distinto (mayúsculas, tildes, espacios)
+    if (tipo === 'texto' && nLl >= 3) {
+      const grupos = {};
+      llenos.forEach(x => { const raw = String(x.v).trim(); const k = sinTildes(raw.toLowerCase()).replace(/\s+/g, ' ');
+        (grupos[k] = grupos[k] || new Set()).add(raw); });
+      const variantes = Object.values(grupos).filter(s => s.size > 1).map(s => [...s]);
+      if (variantes.length && distintos <= Math.max(30, N * 0.6)) {
+        add('media', 'El mismo valor escrito de distintas formas', nombre(j),
+          `${plural(variantes.length, 'valor aparece', 'valores aparecen')} con mayúsculas o tildes distintas. Para una IA son categorías diferentes y te cuenta mal los totales por grupo. Las abreviaturas (como «Stgo») no las detecto.`,
+          'Elige una forma y usa Buscar y reemplazar. Si son muchas variantes, OpenRefine (gratis) las agrupa solo.',
+          variantes.slice(0, 3).map(v => v.map(s => `«${s}»`).join(' · ')), null);
+        notas.push('variantes');
+      }
+    }
+
+    resumenCols.push({ nombre: nombre(j), tipo, nVac, distintos, notas });
+  }
+
+  pintar(problemas, resumenCols, { N, nc, nombreHoja, recortado });
+}
+
+// ------------------------------------------------------------------ resultados
+const ORDEN = { alta: 0, media: 1, baja: 2 };
+const SEV = { alta: 'Arreglar antes', media: 'Conviene arreglar', baja: 'Detalle' };
+
+function pintar(problemas, cols, info) {
+  problemas.sort((a, b) => ORDEN[a.sev] - ORDEN[b.sev]);
+  const n = s => problemas.filter(p => p.sev === s).length;
+  $('#sum').innerHTML = `<div class="big">Revisé ${plural(info.N, 'fila', 'filas')} y ${plural(info.nc, 'columna', 'columnas')}${info.nombreHoja ? ` de la hoja «${esc(info.nombreHoja)}»` : ''}. ` +
+    (problemas.length ? `Encontré ${plural(problemas.length, 'cosa', 'cosas')} que pueden confundir a una IA.` : 'No encontré problemas de los que reviso.') + '</div>' +
+    `<div class="chips">${problemas.length ? ['alta', 'media', 'baja'].filter(n).map(s => `<span class="chip ${s}">${SEV[s]}: ${n(s)}</span>`).join('') : '<span class="chip ok">Lista para pasarla a una IA</span>'}</div>` +
+    (info.recortado ? `<p style="margin-top:8px;color:var(--mut);font-size:14px">Revisé solo las primeras ${MAX_FILAS.toLocaleString('es-CL')} filas.</p>` : '');
+
+  $('#issues').innerHTML = problemas.map(p => `<article class="iss ${p.sev}">
+    <div class="top"><div><h3>${esc(p.titulo)}</h3>${p.col ? `<div class="col">Columna: ${esc(p.col)}</div>` : ''}</div><span class="chip ${p.sev}">${SEV[p.sev]}</span></div>
+    <p>${esc(p.texto)}</p>
+    ${p.ej && p.ej.length ? `<div class="ej">Ejemplos: ${p.ej.map(e => `<code>${esc(e)}</code>`).join(' ')}</div>` : ''}
+    ${p.filas && p.filas.length ? `<div class="ej">Filas: ${p.filas.slice(0, 12).join(', ')}${p.filas.length > 12 ? '…' : ''}</div>` : ''}
+    <div class="fix"><b>Cómo arreglarlo en Excel:</b> ${esc(p.fix)}</div></article>`).join('');
+
+  $('#cols').innerHTML = '<tr><th>Columna</th><th>Parece</th><th class="n">Vacías</th><th class="n">Valores distintos</th><th>Ojo con</th></tr>' +
+    cols.map(c => `<tr><td><b>${esc(c.nombre)}</b></td><td>${c.tipo}</td><td class="n">${c.nVac}</td><td class="n">${c.distintos}</td><td>${esc(c.notas.join(', ') || '—')}</td></tr>`).join('');
+
+  const lineas = [
+    'Te paso la estructura de una planilla, sin sus datos. Antes de que te pase los datos: 1) dime qué entiendes de cada columna, 2) qué problemas arreglarías primero y 3) qué preguntas me harías. No calcules nada todavía.',
+    '',
+    `Filas de datos: ${info.N} · Columnas: ${info.nc}`,
+    'Columnas:',
+    ...cols.map((c, i) => `${i + 1}. ${c.nombre}: ${c.tipo} · vacías ${c.nVac} de ${info.N} · ${c.distintos} valores distintos${c.notas.length ? ' · ojo: ' + c.notas.join(', ') : ''}`),
+    '',
+    'Problemas que ya detecté:',
+    ...(problemas.length ? problemas.map(p => `- ${p.titulo}${p.col ? ' (' + p.col + ')' : ''}`) : ['- Ninguno de los que reviso.']),
+    '',
+    'Formato: en Chile el punto separa miles y la coma, decimales. Las fechas son día-mes-año salvo que diga lo contrario.'
+  ];
+  $('#aitext').value = lineas.join('\n');
+  $('#res').classList.remove('hidden');
+  $('#res').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function mostrarError(m) { const e = $('#err'); e.textContent = m; e.classList.remove('hidden'); }
+function ocultarError() { $('#err').classList.add('hidden'); }
+
+// ------------------------------------------------------------------ eventos
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) abrir(f); });
+$('#file').addEventListener('change', e => { const f = e.target.files[0]; if (f) abrir(f); e.target.value = ''; });
+$('#pick').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#file').click(); } });
+$('#demo').addEventListener('click', () => { libro = null; nombreArchivo = 'ejemplo.csv'; $('#sheetsel').classList.add('hidden'); ocultarError(); revisar(parseCSV(EJEMPLO), null); });
+$('#sheet').addEventListener('change', e => revisar(leerHoja(e.target.value), e.target.value));
+$('#copy').addEventListener('click', async () => {
+  const t = $('#aitext'); const b = $('#copy');
+  try { await navigator.clipboard.writeText(t.value); } catch { t.select(); document.execCommand('copy'); }
+  b.textContent = 'Copiado ✓'; setTimeout(() => b.textContent = 'Copiar', 1800);
+});
+</script>
+</body>
+</html>

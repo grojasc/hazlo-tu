@@ -1,0 +1,12 @@
+﻿Folio;Fecha;RUT cliente;Cliente;Comuna;Producto;Cantidad;Precio unitario;Código SKU;N° seguimiento
+1001;09-11-2026;12.345.678-5;Ferretería Sur;Santiago;Guantes de nitrilo;12;4990;00123;7800012345678901234
+1002;09-11-2026;11.111.111-1;Comercial Andes;SANTIAGO;Casco de seguridad;5;12990;00456;7800012345678901235
+1003;2026-11-10;22222222-2;Ferretería Sur ;Santiago ;Lentes de seguridad;12 cajas;3490;123;7,80001E+18
+1004;10/11/2026;12.345.678-9;Distribuidora Norte;Antofagasta;Guantes de nitrilo;8;4990;00123;7800012345678901237
+;;;;;;;;;
+1005;11-11-2026;33.333.333-3;Comercial Andes;santiago;Chaleco reflectante;1.200;$2.990;00789;7800012345678901000
+Subtotal;;;;;;1237;;;
+1006;11 nov 2026;44444444-4;Minera Los Cerros;Calama;Casco de seguridad;20;12990;00456;7800012345678901239
+1006;11 nov 2026;44444444-4;Minera Los Cerros;Calama;Casco de seguridad;20;12990;00456;7800012345678901239
+1007;12-11-2026;;Constructora Valle;Rancagua;Botas de seguridad;6;;789;7800012345678901240
+1008;13-11-2026;55.555.555-5;Ferretería Sur;Santiago;Lentes de seguridad;15;3490;0456;7800012345678901241
